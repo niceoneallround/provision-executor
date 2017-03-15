@@ -100,14 +100,17 @@ describe('Test Promise DeObfuscate Data', function () {
     return promiseDeobfuscate(dummyServiceCtx, qpa, provision, graph, msgId, msgAction, {})
       .then(function (result) {
         console.log(result);
+        result.should.have.property('data');
+        result.data.should.have.property('@graph');
+        result.should.have.property('os');
       },
 
       function (err) {
-        console.log('****here1***', err);
+        console.log('*****TEST-FAILED', err);
         throw err;
       })
       .catch(function (err) {
-        console.log('****here2***', err);
+        console.log('***TEST-FAILED-UNEXPECTED-ERROR', err);
         throw err;
       });
   }); //it 1.1
