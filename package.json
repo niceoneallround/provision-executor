@@ -1,0 +1,49 @@
+{
+  "name": "provision-executor",
+  "version": "0.0.1",
+  "description": "Executes Metadata that has provisioned in a privacy agent",
+  "main": "gulpfile.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/niceoneallround/provision-executor.git"
+  },
+  "author": "rich@webshield.io",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/niceoneallround/provision-executor/issues"
+  },
+  "homepage": "https://github.com/niceoneallround/provision-executor#readme",
+  "devDependencies": {
+    "is-utils": "git://github.com/niceoneallround/is-utils.git",
+    "gulp": "^3.9.1",
+    "gulp-buddy.js": "^1.0.0",
+    "gulp-istanbul": "^1.0.0",
+    "gulp-jscs": "^4.0.0",
+    "gulp-jshint": "^2.0.1",
+    "gulp-mocha": "^3.0.1",
+    "gulp-nsp": "^2.4.2",
+    "jshint": "^2.9.2",
+    "jshint-stylish": "^2.2.0",
+    "nock": "^8.0.0",
+    "yargs": "^6.4.0"
+  },
+  "dependencies": {
+    "async": "^2.0.1",
+    "connector-utils": "git://github.com/niceoneallround/connector-utils.git",
+    "data-models": "git://github.com/niceoneallround/data-models.git",
+    "http-status": "^1.0.1",
+    "js-yaml": "^3.6.1",
+    "jwt-utils": "git://github.com/niceoneallround/jwt-utils.git",
+    "lodash": "^4.17.4",
+    "metadata": "git://github.com/niceoneallround/metadata.git",
+    "moment": "^2.16.0",
+    "node-utils": "git://github.com/niceoneallround/node-utils.git",
+    "uuid": "^3.0.0"
+  }
+}

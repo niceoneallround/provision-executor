@@ -1,0 +1,33 @@
+#
+# Needed as the promise de-obfuscate fetches metadata and uses test canons
+#
+version: '1'
+'testing':
+  # capitals mean the parametere can be overridden by an Encironmental Variable.
+  DOMAIN_NAME: fake.webshield.io #the domain name (CNAME) the service should be using, can be overriden by an env
+  LISTEN_PORT: 8080 # the listen port, can be overriden by an env
+  LISTEN_PORT_INSIDE_DOCKER: 8080 # FIXME look at
+  api_gateway:
+    url: # can be overridden by env API_GATEWAY_URL
+    webshield_api_key: # can be overridden by env WEBSHIELD_API_KEY
+  privacy_agent:
+    id: // not used
+  metadata:
+    skip_startup_create: false  # can be overridden by an env SKIP_STARTUP_CREATE_METADATA
+  terminate_tls:
+    enabled: false
+    certificate_file: 'add-default-file'
+    private_key_file: 'add-default-file'
+  jwt:
+    signer: # issuer is the DOMAIN_NAME - these are bogus files generated for tests
+      alg: 'RS256' # see https://www.rfc-editor.org/rfc/rfc7518.txt - supported are 'HS256 or RS256 from JWS specification'
+      RS256: # code is rooted in node_modules/connector-utils/config/lib hence need to move up
+        certificate_file: '../../../../files/test-jwt-rsa.x509crt'
+        public_key_file: '../../../../files/test-jwt-rsa-public.pem'
+        private_key_file: '../../../../files/test-jwt-rsa-private.pem'
+      HS256:
+        secret: bogus_test_secret #the secret to use for signing if using hs256 - shoud only use for testing, can be overridden by JWT_SECRET'
+    verifier:
+      enabled: true # can be overridden by JWT_VERFIY
+      HS256:
+        secret: bogus_test_secret
