@@ -1,6 +1,6 @@
 {
   "name": "provision-executor",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Executes Metadata that has provisioned in a privacy agent",
   "main": "gulpfile.js",
   "directories": {
