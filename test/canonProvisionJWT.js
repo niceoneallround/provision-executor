@@ -16,12 +16,12 @@ function create(config, props) {
   assert(props.privacyPipeId, util.format('create - props.privacyPipeId missing:%j', props));
 
   let props1 = { domainName: config.DOMAIN_NAME, hostname: config.getHostname() };
-  let md = PSICanons.createDeobfuscatePrivacyStepI(props1);
+  let pstepI = PSICanons.createDeobfuscatePrivacyStepI(props1);
 
   let provision = MDUtils.YAML2Node({
     id: 'canon-prov-1',
     type: 'provision',
-    provisioned_metadata: md,
+    provisioned_metadata: [pstepI],
     privacy_pipe: props.privacyPipeId,
   },
   props1);
