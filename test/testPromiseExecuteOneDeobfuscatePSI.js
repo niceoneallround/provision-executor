@@ -13,12 +13,12 @@ const OSCanons = require('metadata/lib/obfuscationService').canons;
 const PNDataModel = require('data-models/lib/PNDataModel');
 const PN_P = PNDataModel.PROPERTY;
 const ProvisionCanons = require('metadata/lib/provision').canons;
-const promiseDeobfuscate = require('../lib/promiseDeobfuscate').execute;
+const promiseExecuteOneDeobfuscatePSI = require('../lib/promiseExecuteOneDeobfuscatePSI').execute;
 const QueryResult = require('is-utils/messages/lib/QueryResult');
 const QueryPrivacyAgent = require('metadata/lib/QueryPrivacyAgent');
 const util = require('util');
 
-describe('Test Promise DeObfuscate Data using Two Provisions', function () {
+describe('Test Promise DeObfuscate One Deobfuscate PSI', function () {
   'use strict';
 
   let dummyServiceCtx;
@@ -40,11 +40,9 @@ describe('Test Promise DeObfuscate Data using Two Provisions', function () {
     });
   });
 
-  it('1.1 should apply provision step to the passed in graph ', function () {
+  it('1.1 should apply privacy step instance to the passed in graph ', function () {
 
-    // use the suject data from the canon query result as these has subjects from
-    // the syndicate request canon and the RS query result canon
-    //
+    // use the suject data from the canon query result
     let qpa = QueryPrivacyAgent.createTestQPA(mdProps);
     let queryResultJWT = QueryResult.createCanonJWT(dummyServiceCtx);
     let validated = QueryResult.validateJWT(dummyServiceCtx, queryResultJWT);
@@ -53,31 +51,17 @@ describe('Test Promise DeObfuscate Data using Two Provisions', function () {
     let msgId = 'query-result-id';
     let msgAction = 'POST-QueryResult';
 
-    console.log('***SUBJECTS PROCESSING:%s', JSON.stringify(validated.subjects, null, 2));
-
-    let provisionProps = { domainName: config.DOMAIN_NAME, hostname: config.getHostname(), privacyPipeId: privacyPipeId, };
-
-    // create a provision for JUST deobfuscate the syndicate request
-    let provision = ProvisionCanons.createDebofuscateIngestPASubjectsProvision(provisionProps);
+    // use the canon provision to defobfuscate the syndicate request subjects which are part of
+    // the query result
+    let provision = ProvisionCanons.createDebofuscateIngestPASubjectsProvision(
+                { domainName: config.DOMAIN_NAME, hostname: config.getHostname(), privacyPipeId: privacyPipeId, });
     let provisionedMD = JSONLDUtils.getArray(provision, PN_P.provisionedMetadata);
     assert((provisionedMD.length === 1),
             util.format('provisionMetadata should have 1 and only 1 metadata:%j', provision));
-
-    // create a provision for the JUST deobfuscate the reference source results
-    // and then extact the metadata and add to the above provision PN_P.provisionmetadata
-    // so now two metadatas to apply
-    let tmpProvision = ProvisionCanons.createDebofuscateReferenceSourceSubjectsProvision(provisionProps);
-    let tmpProvisionedMD = JSONLDUtils.getArray(tmpProvision, PN_P.provisionedMetadata);
-    assert((tmpProvisionedMD.length === 1),
-            util.format('provisionMetadata should have 1 and only 1 metadata:%j', tmpProvision));
-
-    // extract provisioned PSI for deob rs subjects and put in original provision
-    let rsPSI = tmpProvisionedMD[0];
-    provision[PN_P.provisionedMetadata].push(rsPSI);
+    let pstepI = provisionedMD[0]; // select the one and only one provision
 
     //
-    // Nock out the TWO calls to get the OS one for each PSI that needs to be de-obfuscated
-    // they both use the same OS
+    // Nock out call to get the OS
     //
     let ospathUrl = '/v1/metadata/obfuscation_service___io___webshield___test___query___local--os-test-private-1';
     nock(localTestConstants.API_GATEWAY_URL)
@@ -91,19 +75,8 @@ describe('Test Promise DeObfuscate Data using Two Provisions', function () {
             ];
           });
 
-    nock(localTestConstants.API_GATEWAY_URL)
-          .log(console.log)
-          .get(ospathUrl)
-          .reply(function () { // not used uri, requestBody) {
-            return [
-              HttpStatus.OK,
-              createMDJWT(OSCanons.createTestObfuscationService(mdProps)),
-              { 'content-type': 'text/plain', },
-            ];
-          });
-
     //
-    // Nock out the TWO calls to get the content key encrypt metadata for each PSI they both use the same KEY
+    // Nock out call to get the content key encrypt metadata
     //
     let ekmdpathUrl = '/v1/metadata/encrypt_key_md___io___webshield___test___dc--content-key-1';
     nock(localTestConstants.API_GATEWAY_URL)
@@ -117,51 +90,29 @@ describe('Test Promise DeObfuscate Data using Two Provisions', function () {
             ];
           });
 
-    nock(localTestConstants.API_GATEWAY_URL)
-          .log(console.log)
-          .get(ekmdpathUrl)
-          .reply(function () { // not used uri, requestBody) {
-            return [
-              HttpStatus.OK,
-              createMDJWT(EKMDCanons.createTestKey(mdProps)),
-              { 'content-type': 'text/plain', },
-            ];
-          });
-
     //
-    // Nock out the TWO call to the Encryption Service to decrypt - treat as the same
+    // Nock out the call to the Encryption Service
     //
     nock('http://test.webshield.io')
           .log(console.log)
           .defaultReplyHeaders({ 'Content-Type': 'application/json', })
           .post('/obfuscation_service/v2/decrypt')
           .reply(200, function (uri, requestBody) {
-            console.log('*****here1', requestBody);
             requestBody.should.have.property('type', 'DecryptRequest');
             requestBody.should.have.property('items');
-            return createDecryptResponse(JSONLDUtils.getArray(requestBody, 'items'));
+            assert((requestBody.items.length === 4), // Can only decrypt one of the result subject as from different parties and have diffrent PAI
+                util.format('Encrypt service expected 4 items (4 per subject) got %s - Incorrect number of items were sent to the decrypt service?:%j',
+                    requestBody.items.length, requestBody));
+            return createDecryptResponse(requestBody.items);
           });
 
-    nock('http://test.webshield.io')
-          .log(console.log)
-          .defaultReplyHeaders({ 'Content-Type': 'application/json', })
-          .post('/obfuscation_service/v2/decrypt')
-          .reply(200, function (uri, requestBody) {
-            console.log('*****here2', requestBody);
-            requestBody.should.have.property('type', 'DecryptRequest');
-            requestBody.should.have.property('items');
-            return createDecryptResponse(JSONLDUtils.getArray(requestBody, 'items'));
-          });
-
-    return promiseDeobfuscate(dummyServiceCtx, qpa, provision, graph, 'set-in-test-pipeId', msgId, msgAction, {})
+    return promiseExecuteOneDeobfuscatePSI(dummyServiceCtx, qpa, provision['@id'], pstepI, graph, msgId, msgAction, {})
       .then(function (result) {
-        //console.log('***TEST_RESULT', result);
-        //console.log('***TEST_RESULT_DATA', result.data);
+        //console.log(result.data);
         result.should.have.property('data');
         result.data.should.have.property('@graph');
-        result.data['@graph'].length.should.be.equal(2, 'Should only contain both deobfuscated syndicate request subject and rs query result subjects');
+        result.data['@graph'].length.should.be.equal(1, 'Should only contain deobfuscated syndicate request subject');
         result.should.have.property('os');
-        result.os.length.should.be.equal(2, 'should return 2 os metadatas, even though the same');
       },
 
       function (err) {
@@ -187,7 +138,6 @@ describe('Test Promise DeObfuscate Data using Two Provisions', function () {
   */
   function createDecryptResponse(inputItems) {
     assert(inputItems, 'DecryptCanon.create  inputItems missing');
-    assert((inputItems.length !== 0), util.format('DecryptCanon.create NO ITEMS TO DECRYPT???:%j', inputItems));
 
     let canonRsp = {
       id: '_:1',

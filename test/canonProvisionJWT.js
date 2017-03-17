@@ -2,8 +2,7 @@
 
 const assert = require('assert');
 const JWTUtils = require('jwt-utils/lib/jwtUtils').jwtUtils;
-const MDUtils = require('metadata/lib/md').utils;
-const PSICanons = require('metadata/lib/privacyStepInstance').canons;
+const ProvisionCanons = require('metadata/lib/provision').canons;
 const util = require('util');
 
 /*
@@ -15,18 +14,9 @@ function create(config, props) {
   assert(props, 'create - no props param passed');
   assert(props.privacyPipeId, util.format('create - props.privacyPipeId missing:%j', props));
 
-  let props1 = { domainName: config.DOMAIN_NAME, hostname: config.getHostname() };
-  let pstepI = PSICanons.createDeobfuscatePrivacyStepI(props1);
+  let props1 = { domainName: config.DOMAIN_NAME, hostname: config.getHostname(), privacyPipeId: props.privacyPipeId, };
 
-  let provision = MDUtils.YAML2Node({
-    id: 'canon-prov-1',
-    type: 'provision',
-    provisioned_metadata: [pstepI],
-    privacy_pipe: props.privacyPipeId,
-  },
-  props1);
-
-  return provision;
+  return ProvisionCanons.createDebofuscateIngestPASubjectsProvision(props1);
 }
 
 /*

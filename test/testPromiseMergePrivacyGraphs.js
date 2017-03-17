@@ -51,12 +51,7 @@ describe('1 Validate that graph merge works as expected', function () {
       },
     };
 
-    const graphs = {
-      '@graph': [
-          { '@graph': [pg1], },
-          { '@graph': [pg2, pg3], },
-        ],
-    };
+    const graphs = { '@graph': [pg1, pg2, pg3], };
 
     return PromiseMergePrivacyGraphs(graphs) // embed
       .then(function (result) {
